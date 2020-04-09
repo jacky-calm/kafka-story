@@ -9,7 +9,7 @@ import java.util.Properties;
 public class StoryProducer {
     public static void main(String[] args) {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "kafka.cluster:9092");
+        props.put("bootstrap.servers", "10.169.164.181:9091,10.169.164.181:9092,10.169.164.181:9093");
 //        props.put("broker.address.family", "v4");
         /**
          * The acks config controls the criteria under which requests are considered complete.
@@ -25,7 +25,8 @@ public class StoryProducer {
 
         // The producer is thread safe and sharing a single producer instance across threads will generally be faster than having multiple instances.
         Producer<String, String> producer = new KafkaProducer<>(props);
-        for (int i = 0; i < 10; i++) {
+
+        for (int i = 0; i < 5; i++) {
             String topic = "kafka-story";
             String key = Integer.toString(i);
             String value = Integer.toString(i);
@@ -33,6 +34,7 @@ public class StoryProducer {
             // The send() method is asynchronous.
             // This allows the producer to batch together individual records for efficiency.
             producer.send(message);
+//            producer.send(new ProducerRecord<>(topic, "message-key", "message-value"));
             /**
              * If the request fails, the producer can automatically retry,
              * though since we have specified retries as 0 it won't.

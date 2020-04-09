@@ -1,0 +1,33 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/ebbypeter/Archimate-PlantUML/master/Archimate.puml
+
+title Kafka Producer
+' KafkaProducer Elements
+class KafkaProducer
+class ProducerMetadata
+class ProducerConfig
+class DefaultPartitioner
+class RecordAccumulator
+class Sender
+' RecordAccumulator Elements
+class ProducerBatch
+class TopicPartition
+' Sender Elements
+class KafkaClient
+
+
+' KafkaProducer Relationships
+Rel_Serving_Up(KafkaProducer, ProducerMetadata, "")
+Rel_Serving_Up(KafkaProducer, ProducerConfig, "")
+Rel_Serving_Up(KafkaProducer, DefaultPartitioner, "")
+Rel_Serving_Up(KafkaProducer, RecordAccumulator, "")
+Rel_Serving_Up(KafkaProducer, Sender, "")
+' RecordAccumulator Relationships
+Rel_Serving_Up(RecordAccumulator, ProducerBatch, "")
+Rel_Serving_Up(RecordAccumulator, TopicPartition, "")
+' Sender Relationships
+Rel_Serving_Up(Sender, RecordAccumulator, "")
+Rel_Serving_Up(Sender, ProducerMetadata, "")
+Rel_Serving_Up(Sender, KafkaClient, "")
+
+@enduml
