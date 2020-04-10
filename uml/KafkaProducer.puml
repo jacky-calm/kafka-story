@@ -7,7 +7,9 @@ class KafkaProducer
 class ProducerMetadata
 class ProducerConfig
 class DefaultPartitioner
-class RecordAccumulator
+class RecordAccumulator {
+    ConcurrentMap<TopicPartition, Deque<ProducerBatch>> batches
+}
 class Sender
 ' RecordAccumulator Elements
 class ProducerBatch

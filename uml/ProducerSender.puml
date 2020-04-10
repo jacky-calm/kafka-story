@@ -1,0 +1,17 @@
+@startuml
+title producer append messages to be sent by sender
+KafkaProducer -> RecordAccumulator:append()
+KafkaProducer <-- RecordAccumulator:RecordAppendResult
+newpage sender sends the messages in another ioThread
+KafkaProducer --> Sender:ioThread(sender).start()
+loop Sender:sendProducerData
+    Sender -> RecordAccumulator:ready()?
+    Sender <-- RecordAccumulator:ReadyCheckResult
+    Sender -> ProducerMetadata:requestUpdate()
+    Sender <-- ProducerMetadata:ReadyCheckResult
+    Sender -> RecordAccumulator:drain(readyNodes)
+    Sender <-- RecordAccumulator:Map<Integer, List<ProducerBatch>> batches
+    Sender -> Sender:sendProduceRequest
+    Sender -> KafkaClient:send(ClientRequest)
+end
+@enduml
