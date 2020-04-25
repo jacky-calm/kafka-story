@@ -1,12 +1,12 @@
 package story.kv.master;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 
 public class ZkController implements Runnable {
-    static final Logger logger = LoggerFactory.getLogger(ZkController.class.getName());
+    static Logger logger = Logger.getLogger(ZkController.class);
     public static final String CONTROLLER = "/controller";
     private final String brokerId;
     private ZooKeeper zk;
@@ -28,28 +28,20 @@ public class ZkController implements Runnable {
 
     private void electController() {
         try {
+            if (this.zk == null) {
+                this.zk = new ZkConnection().connect(host);
+            }
             Stat exists = zk.exists(CONTROLLER, watcher);
             if (exists == null) {
                 logger.info("no controller exists, try to be the controller ...");
                 String data = String.format("{\"version\":1,\"brokerid\":%s,\"timestamp\":\"%d\"}", brokerId, System.currentTimeMillis());
-                String s = zk.create(CONTROLLER, data.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                String s = zk.create(CONTROLLER, data.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
                 logger.info(s);
             } else {
                 logger.info(exists.toString());
+                String data = new String(zk.getData(CONTROLLER, false, null), "UTF-8");
+                logger.info("current controller is " + data);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void connect() {
-        try {
-            zk = new ZooKeeper(host, 2000, new Watcher() {
-                @Override
-                public void process(WatchedEvent we) {
-                    logger.info("default watch:" + we);
-                }
-            });
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -57,12 +49,11 @@ public class ZkController implements Runnable {
 
     @Override
     public void run() {
-        connect();
         electController();
         while (true) {
             try {
-                logger.info("sleep ... ");
-                Thread.sleep(10000);
+                logger.info("mock doing controller job ... ");
+                Thread.sleep(100000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -70,6 +61,7 @@ public class ZkController implements Runnable {
     }
 
     public static void main(String[] args) {
+        BasicConfigurator.configure();
         ZkController zkController = new ZkController("localhost", args[0]);
         Thread thread = new Thread(zkController);
         thread.start();
