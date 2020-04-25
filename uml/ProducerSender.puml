@@ -1,14 +1,12 @@
 @startuml
-title producer append messages to be sent by sender
+title 在主线程producer只是把消息append到一个缓冲区
 KafkaProducer -> RecordAccumulator:append()
 KafkaProducer <-- RecordAccumulator:RecordAppendResult
-newpage sender sends the messages in another ioThread
+newpage producer的sender负责在独立的线程ioThread里面批量的发送
 KafkaProducer --> Sender:ioThread(sender).start()
 loop Sender:sendProducerData
     Sender -> RecordAccumulator:ready()?
     Sender <-- RecordAccumulator:ReadyCheckResult
-    Sender -> ProducerMetadata:requestUpdate()
-    Sender <-- ProducerMetadata:ReadyCheckResult
     Sender -> RecordAccumulator:drain(readyNodes)
     Sender <-- RecordAccumulator:Map<Integer, List<ProducerBatch>> batches
     Sender -> Sender:sendProduceRequest

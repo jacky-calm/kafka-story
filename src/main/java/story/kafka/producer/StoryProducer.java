@@ -9,7 +9,7 @@ import java.util.Properties;
 public class StoryProducer {
     public static void main(String[] args) {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "10.169.164.181:9091,10.169.164.181:9092,10.169.164.181:9093");
+        props.put("bootstrap.servers", "localhost:9091,localhost:9092,localhost:9093");
 //        props.put("broker.address.family", "v4");
         /**
          * The acks config controls the criteria under which requests are considered complete.
