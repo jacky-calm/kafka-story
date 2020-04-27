@@ -1,15 +1,16 @@
 package story.kv.master;
 
-import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 
+import static story.helper.LogHelper.getLogger;
+
 public class ZkController implements Runnable {
-    static Logger logger = Logger.getLogger(ZkController.class);
+    private static Logger logger = getLogger(ZkController.class);
     public static final String CONTROLLER = "/controller";
     private final String brokerId;
-    private ZooKeeper zk;
+    private ZooKeeper zkClient;
     private String host;
 
     public ZkController(String host, String brokerId) {
@@ -17,54 +18,50 @@ public class ZkController implements Runnable {
         this.brokerId = brokerId;
     }
 
-    Watcher watcher = new Watcher() {
-        public void process(WatchedEvent we) {
-            logger.info("got event of /controller:" + we);
-            if (we.getState() == Event.KeeperState.SyncConnected) {
-                electController();
-            }
+    Watcher watcher = we -> {
+        logger.info("got event of /controller:" + we);
+        // 这里对视频的代码改进了一下
+        if (we.getType() == Watcher.Event.EventType.NodeDeleted) {
+            tryElectController();
         }
     };
 
-    private void electController() {
+    private void tryElectController() {
         try {
-            if (this.zk == null) {
-                this.zk = new ZkConnection().connect(host);
+            if (this.zkClient == null) {
+                this.zkClient = new ZkConnection().connect(host);
             }
-            Stat exists = zk.exists(CONTROLLER, watcher);
+            Stat exists = zkClient.exists(CONTROLLER, watcher);
             if (exists == null) {
                 logger.info("no controller exists, try to be the controller ...");
                 String data = String.format("{\"version\":1,\"brokerid\":%s,\"timestamp\":\"%d\"}", brokerId, System.currentTimeMillis());
-                String s = zk.create(CONTROLLER, data.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+                String s = zkClient.create(CONTROLLER, data.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
                 logger.info(s);
             } else {
-                logger.info(exists.toString());
-                String data = new String(zk.getData(CONTROLLER, false, null), "UTF-8");
-                logger.info("current controller is " + data);
+                logger.info("controller exists, " + exists.toString());
+                byte[] controllerData = zkClient.getData(CONTROLLER, false, null);
+                String s = new String(controllerData, "UTF-8");
+                logger.info("current controller is " + s);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
     @Override
     public void run() {
-        electController();
+        tryElectController();
         while (true) {
             try {
                 logger.info("mock doing controller job ... ");
-                Thread.sleep(100000);
+                Thread.sleep(1000000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
     }
-
     public static void main(String[] args) {
-        BasicConfigurator.configure();
         ZkController zkController = new ZkController("localhost", args[0]);
         Thread thread = new Thread(zkController);
         thread.start();
     }
-
 }
